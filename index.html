@@ -236,29 +236,29 @@
 
 <script>
 const SAMPLE_DATA = [
-  {"accountId":"a9ZHr000002v5cqMAA","patch":"ESSales3","country":"Spain","quota":349.02,"credit":2160.16,"newOwner":""},
-  {"accountId":"a9Z2H000002RK7uUAG","patch":"ESSales2","country":"Spain","quota":65062.88,"credit":47017.11,"newOwner":"ESSales5"},
-  {"accountId":"a9Z2H000001b2XRUAY","patch":"ESSales6","country":"Spain","quota":97.0,"credit":0.0,"newOwner":""},
-  {"accountId":"a9ZHr000002mAaNMAU","patch":"ESSales6","country":"Netherlands","quota":18038.72,"credit":12021.76,"newOwner":""},
-  {"accountId":"a9ZHr000002v4O9MAI","patch":"ESSales1","country":"Spain","quota":12848.76,"credit":28348.78,"newOwner":""},
-  {"accountId":"a9Z2H000001G45iUAC","patch":"ESSales3","country":"Spain","quota":146715.68,"credit":107302.74,"newOwner":""},
-  {"accountId":"a9Z2H000001bAKFUA2","patch":"ESSales4","country":"Germany","quota":44082.66,"credit":30559.38,"newOwner":""},
-  {"accountId":"a9Z2H000001b2GwUAI","patch":"ESSales1","country":"Spain","quota":36746.91,"credit":21254.48,"newOwner":"ESSales3"},
-  {"accountId":"a9ZPV00000YgGET2A3","patch":"ESSales4","country":"United States","quota":0.0,"credit":9420.0,"newOwner":""},
-  {"accountId":"a9Z2H000001b2AuUAI","patch":"ESSales6","country":"Portugal","quota":712685.06,"credit":725354.44,"newOwner":""},
-  {"accountId":"a9Z2H000001b2EXUAY","patch":"ESSales4","country":"Spain","quota":517621.06,"credit":200626.08,"newOwner":""},
-  {"accountId":"a9Z2H000002RIcXUAW","patch":"ESSales4","country":"Spain","quota":116158.09,"credit":52163.4,"newOwner":""},
-  {"accountId":"a9Z2H000001b2EXUAZ","patch":"ESSales6","country":"Spain","quota":411608.0,"credit":301810.68,"newOwner":""},
-  {"accountId":"a9Z2H000001b2F3UAI","patch":"ESSales2","country":"Spain","quota":182978.24,"credit":91587.55,"newOwner":""},
-  {"accountId":"a9Z2H000000Zky0UAC","patch":"ESSales2","country":"Singapore","quota":292113.78,"credit":101704.05,"newOwner":""},
-  {"accountId":"a9Z2H000001b0EGUAY","patch":"ESSales2","country":"Australia","quota":50399.48,"credit":21698.13,"newOwner":""},
-  {"accountId":"a9Z2H000001b2F4UAI","patch":"ESSales3","country":"Spain","quota":50124.98,"credit":32835.68,"newOwner":""},
-  {"accountId":"a9Z2H000001FyNWUA0","patch":"ESSales1","country":"Spain","quota":8064.0,"credit":0.0,"newOwner":""},
-  {"accountId":"a9Z2H000001b43WUAQ","patch":"ESSales1","country":"Spain","quota":1154579.32,"credit":489356.98,"newOwner":"ESSales6"},
-  {"accountId":"a9Z2H000001b2GZUAY","patch":"ESSales5","country":"Spain","quota":219172.0,"credit":228477.52,"newOwner":""},
-  {"accountId":"a9Z2H000001Fvl9UAC","patch":"ESSales5","country":"Brazil","quota":81948.0,"credit":86977.89,"newOwner":""},
-  {"accountId":"a9Z2H000001ayq8UAA","patch":"ESSales5","country":"Brazil","quota":52793.0,"credit":55219.59,"newOwner":""},
-  {"accountId":"a9Z2H000001b3duUAA","patch":"ESSales5","country":"Brazil","quota":27480.0,"credit":33359.1,"newOwner":""}
+  {"accountId":"a9ZE768R9DOJXHFM7W","patch":"Rep C","country":"Spain","quota":318.09,"credit":2002.3,"newOwner":""},
+  {"accountId":"a9ZO5NUCYJRGE907ZJ","patch":"Rep B","country":"Spain","quota":65602.6,"credit":70068.02,"newOwner":"Rep E"},
+  {"accountId":"a9ZLZC7X5SLZXN10HT","patch":"Rep F","country":"Spain","quota":57.16,"credit":0.0,"newOwner":""},
+  {"accountId":"a9Z3B0BI7S179ERCPX","patch":"Rep F","country":"Netherlands","quota":11617.29,"credit":17435.43,"newOwner":""},
+  {"accountId":"a9ZLQLE356657KRSU4","patch":"Rep A","country":"Spain","quota":18047.15,"credit":19973.05,"newOwner":""},
+  {"accountId":"a9Z2AL17ETEED3VXPE","patch":"Rep C","country":"Spain","quota":145009.55,"credit":90409.07,"newOwner":""},
+  {"accountId":"a9ZNNBVP7TO8AR2FY9","patch":"Rep D","country":"Germany","quota":46439.57,"credit":45775.7,"newOwner":""},
+  {"accountId":"a9ZVSJX9VENLAOLZOF","patch":"Rep A","country":"Spain","quota":33726.57,"credit":31376.48,"newOwner":"Rep C"},
+  {"accountId":"a9ZCOOY6N6NNQV8UCE","patch":"Rep D","country":"United States","quota":0.0,"credit":10219.98,"newOwner":""},
+  {"accountId":"a9Z0BOQ6SF7QQGJMMR","patch":"Rep F","country":"Portugal","quota":959152.83,"credit":522482.28,"newOwner":""},
+  {"accountId":"a9Z03BKYFDKYLARZSE","patch":"Rep D","country":"Spain","quota":356888.45,"credit":202011.31,"newOwner":""},
+  {"accountId":"a9Z44GUPFY699KWDTX","patch":"Rep D","country":"Spain","quota":119304.91,"credit":77317.76,"newOwner":""},
+  {"accountId":"a9ZWH628G0BHCQKJMK","patch":"Rep F","country":"Spain","quota":393222.61,"credit":206010.73,"newOwner":""},
+  {"accountId":"a9ZL11C8R5FPFS469D","patch":"Rep B","country":"Spain","quota":204143.53,"credit":65765.72,"newOwner":""},
+  {"accountId":"a9ZKPNT2OQT53RN5VP","patch":"Rep B","country":"Singapore","quota":343666.72,"credit":135938.58,"newOwner":""},
+  {"accountId":"a9ZLC1CM664HYQ0DO3","patch":"Rep B","country":"Australia","quota":69266.1,"credit":16466.48,"newOwner":""},
+  {"accountId":"a9ZFSV2TVURDB1EA5X","patch":"Rep C","country":"Spain","quota":73636.18,"credit":45662.98,"newOwner":""},
+  {"accountId":"a9ZA4F2CLBCBT1TLJO","patch":"Rep A","country":"Spain","quota":4196.47,"credit":0.0,"newOwner":""},
+  {"accountId":"a9ZAEIW8IZ7N5KFK17","patch":"Rep A","country":"Spain","quota":1721047.6,"credit":341435.3,"newOwner":"Rep F"},
+  {"accountId":"a9ZAZ9KF0NIXZ2LC4X","patch":"Rep E","country":"Spain","quota":131523.68,"credit":240394.58,"newOwner":""},
+  {"accountId":"a9Z8K7UF7S4Q8U9NOI","patch":"Rep E","country":"Brazil","quota":119458.41,"credit":95462.02,"newOwner":""},
+  {"accountId":"a9Z8IOFI29RC6S1126","patch":"Rep E","country":"Brazil","quota":29298.52,"credit":45398.16,"newOwner":""},
+  {"accountId":"a9Z9X9KAQ4C5A9GX08","patch":"Rep E","country":"Brazil","quota":32126.68,"credit":47313.4,"newOwner":""}
 ];
 
 let ACCOUNTS = [];
@@ -620,7 +620,7 @@ document.getElementById('useSampleBtn').addEventListener('click', function(){
   document.getElementById('fileInput').value = '';
   document.getElementById('fileError').style.display = 'none';
   loadDataset(JSON.parse(JSON.stringify(SAMPLE_DATA)));
-  document.getElementById('dataStatus').textContent = 'Using built-in sample data (24 accounts, 6 AEs, with pre-assigned New Owner changes on a few rows) — real export data with account/rep identifiers removed.';
+  document.getElementById('dataStatus').textContent = 'Using built-in sample data (23 accounts, 6 AEs, with pre-assigned New Owner changes on a few rows) — fully synthetic, no real account IDs or revenue figures.';
 });
 
 function csvEscape(v){
