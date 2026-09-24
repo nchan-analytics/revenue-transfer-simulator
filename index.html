@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Revenue Transfer Impact Simulator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#161a23; --ink-2:#565d6d; --ink-3:#8b91a0;
+    --border:#e2e4ea; --accent:#1c3d5a; --accent-2:#2f6690;
+    --teal:#0f6e56; --teal-bg:#e1f5ee;
+    --amber:#854f0b; --amber-bg:#faeeda;
+    --red:#791f1f; --red-bg:#fcebeb;
+    --mono: "SF Mono", "Roboto Mono", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0e1116; --card:#171b23; --ink:#e7e9ee; --ink-2:#a8adba; --ink-3:#6d7280;
+      --border:#2a2f3a; --accent:#7fb3d9; --accent-2:#5b93c0;
+      --teal:#34d399; --teal-bg:#0b2a22;
+      --amber:#fbbf24; --amber-bg:#33260c;
+      --red:#f87171; --red-bg:#3a1414;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e1116; --card:#171b23; --ink:#e7e9ee; --ink-2:#a8adba; --ink-3:#6d7280;
+    --border:#2a2f3a; --accent:#7fb3d9; --accent-2:#5b93c0;
+    --teal:#34d399; --teal-bg:#0b2a22;
+    --amber:#fbbf24; --amber-bg:#33260c;
+    --red:#f87171; --red-bg:#3a1414;
+  }
+  * { box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    padding: 28px 20px 60px;
+  }
+  .wrap{ max-width: 1120px; margin:0 auto; }
+  header{ margin-bottom: 22px; }
+  header h1{ font-size:21px; font-weight:600; margin:0 0 4px; color:var(--accent); }
+  header p{ margin:0; color:var(--ink-2); font-size:13px; }
+
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:10px;
+    padding:20px; margin-bottom:16px;
+  }
+  .card h2{ font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-3); margin:0 0 14px; font-weight:600; }
+
+  .row{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
+  .field{ flex:1; min-width:150px; }
+  .field label{ display:block; font-size:12px; color:var(--ink-2); margin-bottom:5px; }
+  select, input[type=text], input[type=number], input[type=file]{
+    width:100%; padding:8px 9px; border:1px solid var(--border); border-radius:6px;
+    background:var(--bg); color:var(--ink); font-size:13px; font-family:inherit;
+  }
+  select:focus, input:focus{ outline:2px solid var(--accent-2); outline-offset:1px; }
+
+  .btn{
+    padding:9px 16px; border-radius:6px; border:1px solid var(--accent); background:var(--accent);
+    color:#fff; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .btn:hover{ background:var(--accent-2); border-color:var(--accent-2); }
+  .btn.secondary{ background:transparent; color:var(--accent); }
+  .btn.secondary:hover{ background:var(--teal-bg); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+
+  .status-line{ font-size:12px; color:var(--ink-3); margin-top:8px; }
+  .error{ color:var(--red); font-size:12px; margin-top:6px; }
+
+  .impact-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:18px; margin-top:6px; }
+  @media (max-width:600px){ .impact-grid{ grid-template-columns:1fr; } }
+  .rep-box{ border:1px solid var(--border); border-radius:8px; padding:16px; }
+  .rep-box .rep-name{ font-size:12px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px; }
+  .rep-box .pct-row{ display:flex; align-items:baseline; gap:10px; }
+  .rep-box .pct{ font-size:24px; font-weight:700; font-family:var(--mono); }
+  .rep-box .arrow{ color:var(--ink-3); font-size:16px; }
+  .rep-box .delta{ font-size:13px; font-weight:600; margin-top:6px; font-family:var(--mono); }
+  .delta.up{ color:var(--teal); }
+  .delta.down{ color:var(--red); }
+  .rep-box .sub{ font-size:12px; color:var(--ink-2); margin-top:10px; line-height:1.5; }
+
+  .indicator{
+    display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px;
+    font-size:13px; font-weight:600; margin-top:16px;
+  }
+  .indicator.green{ background:var(--teal-bg); color:var(--teal); }
+  .indicator.amber{ background:var(--amber-bg); color:var(--amber); }
+  .indicator.red{ background:var(--red-bg); color:var(--red); }
+  .dot{ width:8px; height:8px; border-radius:50%; background:currentColor; }
+
+  .health-tag{
+    display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px;
+    margin-left:8px; vertical-align:middle;
+  }
+  .health-tag.healthy{ background:var(--teal-bg); color:var(--teal); }
+  .health-tag.watch{ background:var(--amber-bg); color:var(--amber); }
+  .health-tag.none{ background:var(--red-bg); color:var(--red); }
+
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  th, td{ text-align:left; padding:7px 8px; border-bottom:1px solid var(--border); white-space:nowrap; }
+  th{ color:var(--ink-3); font-weight:600; font-size:10.5px; text-transform:uppercase; }
+  td.num{ font-family:var(--mono); text-align:right; }
+  th.num{ text-align:right; }
+  tbody tr:hover{ background:var(--bg); }
+  tbody tr.pending{ background:var(--teal-bg); }
+  tbody tr.pre-assigned td.tag{ color: var(--accent-2); font-weight:600; }
+  .acct-table-wrap{ max-height:420px; overflow:auto; border:1px solid var(--border); border-radius:8px; }
+  .acct-table-wrap thead th{ position:sticky; top:0; background:var(--card); z-index:1; }
+  .rowSelect{ padding:5px 6px; font-size:12px; min-width:130px; }
+
+  .toolbar{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .file-label{
+    display:inline-flex; align-items:center; gap:8px; padding:9px 14px; border:1px dashed var(--border);
+    border-radius:6px; cursor:pointer; font-size:13px; color:var(--ink-2);
+  }
+  .file-label:hover{ border-color:var(--accent-2); color:var(--accent-2); }
+  input[type=file]{ display:none; }
+
+  .help-line{ font-size:12px; color:var(--ink-3); margin-top:2px; }
+  .selected-bar{
+    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+    margin-top:12px; padding:10px 14px; background:var(--teal-bg); border-radius:8px;
+  }
+  .selected-bar span{ font-size:13px; color:var(--teal); font-weight:600; }
+  .arrow-cell{ color:var(--ink-3); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Revenue transfer impact simulator</h1>
+    <p>Upload a file with pre-assigned new owners — see the impact instantly, and override any assignment right here.</p>
+  </header>
+
+  <div class="card">
+    <div class="toolbar">
+      <h2 style="margin:0;">Data source</h2>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <label class="file-label">
+          <span id="fileLabelText">Upload 2.05 export (.xlsx)</span>
+          <input type="file" id="fileInput" accept=".xlsx,.xls">
+        </label>
+        <button class="btn secondary" id="useSampleBtn">Use sample data</button>
+      </div>
+    </div>
+    <div class="status-line" id="dataStatus">Using built-in sample data (24 accounts, 6 AEs, with pre-assigned New Owner changes on a few rows) — real export data with account/rep identifiers removed.</div>
+    <div class="error" id="fileError" style="display:none;"></div>
+  </div>
+
+  <div class="card">
+    <h2>Team overview — current vs proposed</h2>
+    <div style="overflow-x:auto;">
+      <table id="patchTable">
+        <thead>
+          <tr>
+            <th>AE Name</th>
+            <th class="num">Accounts (Before → After)</th>
+            <th class="num">Total quota (Before → After)</th>
+            <th class="num">Total credit (Before → After)</th>
+            <th class="num">Predicted YE % (Before → After)</th>
+          </tr>
+        </thead>
+        <tbody id="patchTableBody"></tbody>
+      </table>
+    </div>
+    <div class="help-line">Proposed = current data with every pre-assigned New Owner (and any Manager Override below) applied.</div>
+  </div>
+
+  <div class="card">
+    <h2>Select &amp; assign accounts</h2>
+    <div class="row">
+      <div class="field">
+        <label for="filterPatch">AE Name</label>
+        <select id="filterPatch"><option value="">All AEs</option></select>
+      </div>
+      <div class="field">
+        <label for="filterAccount">Account Name</label>
+        <select id="filterAccount"><option value="">All accounts</option></select>
+      </div>
+      <div class="field">
+        <label for="filterQuota">Quota range</label>
+        <select id="filterQuota">
+          <option value="">All quota</option>
+          <option value="0-0">$0</option>
+          <option value="0-50000">$0 – $50K</option>
+          <option value="50000-200000">$50K – $200K</option>
+          <option value="200000-500000">$200K – $500K</option>
+          <option value="500000-">$500K+</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="filterCredit">Credit (% of quota)</label>
+        <select id="filterCredit">
+          <option value="">All credit levels</option>
+          <option value="none">No credit</option>
+          <option value="under30">Under 30% attainment</option>
+          <option value="30to70">30–70% attainment</option>
+          <option value="over70">70%+ attainment</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="acct-table-wrap" style="margin-top:14px;">
+      <table id="acctTable">
+        <thead>
+          <tr>
+            <th>Account Name</th><th>Current AE</th><th>CBA Country</th>
+            <th class="num">Yearly quota</th><th class="num">Cumul. credit</th><th class="num">Remaining quota</th>
+            <th>Pre-assigned new owner</th>
+            <th>Manager override</th>
+          </tr>
+        </thead>
+        <tbody id="acctTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="selected-bar">
+      <span id="selectedSummary">0 accounts pending transfer</span>
+      <div style="display:flex; gap:10px;">
+        <button class="btn secondary" id="clearSelectionBtn">Reset all</button>
+        <button class="btn" id="calcBtn">Calculate impact</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="resultsCard" style="display:none;">
+    <h2>Transfer impact</h2>
+    <div class="help-line" style="margin-bottom:12px;">Same before/after figures as Team Overview above, grouped by who's losing or receiving accounts. The +/- pts under each box is the change in that AE's Predicted Year-End % (percentage points) caused by this transfer — e.g. "+6.2 pts" means their predicted attainment goes up 6.2 percentage points; the colour band below shows the largest such swing across everyone affected.</div>
+    <div id="impactGroups"></div>
+    <div style="margin-top:18px;">
+      <button class="btn" id="exportBtn">Export result</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SAMPLE_DATA = [
+  {"accountId":"a9ZHr000002v5cqMAA","patch":"ESSales3","country":"Spain","quota":349.02,"credit":2160.16,"newOwner":""},
+  {"accountId":"a9Z2H000002RK7uUAG","patch":"ESSales2","country":"Spain","quota":65062.88,"credit":47017.11,"newOwner":"ESSales5"},
+  {"accountId":"a9Z2H000001b2XRUAY","patch":"ESSales6","country":"Spain","quota":97.0,"credit":0.0,"newOwner":""},
+  {"accountId":"a9ZHr000002mAaNMAU","patch":"ESSales6","country":"Netherlands","quota":18038.72,"credit":12021.76,"newOwner":""},
+  {"accountId":"a9ZHr000002v4O9MAI","patch":"ESSales1","country":"Spain","quota":12848.76,"credit":28348.78,"newOwner":""},
+  {"accountId":"a9Z2H000001G45iUAC","patch":"ESSales3","country":"Spain","quota":146715.68,"credit":107302.74,"newOwner":""},
+  {"accountId":"a9Z2H000001bAKFUA2","patch":"ESSales4","country":"Germany","quota":44082.66,"credit":30559.38,"newOwner":""},
+  {"accountId":"a9Z2H000001b2GwUAI","patch":"ESSales1","country":"Spain","quota":36746.91,"credit":21254.48,"newOwner":"ESSales3"},
+  {"accountId":"a9ZPV00000YgGET2A3","patch":"ESSales4","country":"United States","quota":0.0,"credit":9420.0,"newOwner":""},
+  {"accountId":"a9Z2H000001b2AuUAI","patch":"ESSales6","country":"Portugal","quota":712685.06,"credit":725354.44,"newOwner":""},
+  {"accountId":"a9Z2H000001b2EXUAY","patch":"ESSales4","country":"Spain","quota":517621.06,"credit":200626.08,"newOwner":""},
+  {"accountId":"a9Z2H000002RIcXUAW","patch":"ESSales4","country":"Spain","quota":116158.09,"credit":52163.4,"newOwner":""},
+  {"accountId":"a9Z2H000001b2EXUAZ","patch":"ESSales6","country":"Spain","quota":411608.0,"credit":301810.68,"newOwner":""},
+  {"accountId":"a9Z2H000001b2F3UAI","patch":"ESSales2","country":"Spain","quota":182978.24,"credit":91587.55,"newOwner":""},
+  {"accountId":"a9Z2H000000Zky0UAC","patch":"ESSales2","country":"Singapore","quota":292113.78,"credit":101704.05,"newOwner":""},
+  {"accountId":"a9Z2H000001b0EGUAY","patch":"ESSales2","country":"Australia","quota":50399.48,"credit":21698.13,"newOwner":""},
+  {"accountId":"a9Z2H000001b2F4UAI","patch":"ESSales3","country":"Spain","quota":50124.98,"credit":32835.68,"newOwner":""},
+  {"accountId":"a9Z2H000001FyNWUA0","patch":"ESSales1","country":"Spain","quota":8064.0,"credit":0.0,"newOwner":""},
+  {"accountId":"a9Z2H000001b43WUAQ","patch":"ESSales1","country":"Spain","quota":1154579.32,"credit":489356.98,"newOwner":"ESSales6"},
+  {"accountId":"a9Z2H000001b2GZUAY","patch":"ESSales5","country":"Spain","quota":219172.0,"credit":228477.52,"newOwner":""},
+  {"accountId":"a9Z2H000001Fvl9UAC","patch":"ESSales5","country":"Brazil","quota":81948.0,"credit":86977.89,"newOwner":""},
+  {"accountId":"a9Z2H000001ayq8UAA","patch":"ESSales5","country":"Brazil","quota":52793.0,"credit":55219.59,"newOwner":""},
+  {"accountId":"a9Z2H000001b3duUAA","patch":"ESSales5","country":"Brazil","quota":27480.0,"credit":33359.1,"newOwner":""}
+];
+
+let ACCOUNTS = [];
+let PATCH_TOTALS = {};
+let OVERRIDE = new Map(); // idx -> manager override patch (only when it differs from effective target)
+
+function effectiveTarget(a, idx){
+  if(idx === undefined) idx = a._idx !== undefined ? a._idx : ACCOUNTS.indexOf(a);
+  if(OVERRIDE.has(idx)) return OVERRIDE.get(idx);
+  if(a.newOwner) return a.newOwner;
+  return a.patch;
+}
+
+function monthsElapsedNow(){
+  const m = new Date().getMonth() + 1;
+  return Math.max(1, m);
+}
+
+function loadDataset(rows){
+  ACCOUNTS = rows.map(r => ({ ...r, newOwner: r.newOwner || '' })).filter(r => r.accountId && r.patch);
+  OVERRIDE = new Map();
+  rebuildPatchTotals();
+  populateFilters();
+  renderPatchTable();
+  renderAcctTable();
+  updateSelectedSummary();
+  document.getElementById('resultsCard').style.display = 'none';
+}
+
+function rebuildPatchTotals(){
+  PATCH_TOTALS = {};
+  ACCOUNTS.forEach(a => {
+    if(!PATCH_TOTALS[a.patch]) PATCH_TOTALS[a.patch] = { quota:0, credit:0, count:0 };
+    PATCH_TOTALS[a.patch].quota += a.quota;
+    PATCH_TOTALS[a.patch].credit += a.credit;
+    PATCH_TOTALS[a.patch].count += 1;
+  });
+}
+
+function proposedPatchTotals(){
+  const totals = {};
+  Object.keys(PATCH_TOTALS).forEach(p => totals[p] = {quota:0, credit:0, count:0});
+  ACCOUNTS.forEach((a, idx) => {
+    const target = effectiveTarget(a, idx);
+    if(!totals[target]) totals[target] = {quota:0, credit:0, count:0};
+    totals[target].quota += a.quota;
+    totals[target].credit += a.credit;
+    totals[target].count += 1;
+  });
+  return totals;
+}
+
+function populateFilters(){
+  const patchSel = document.getElementById('filterPatch');
+  patchSel.innerHTML = '<option value="">All AEs</option>';
+  Object.keys(PATCH_TOTALS).sort().forEach(p => {
+    const opt = document.createElement('option'); opt.value = p; opt.textContent = p;
+    patchSel.appendChild(opt);
+  });
+
+  const acctSel = document.getElementById('filterAccount');
+  acctSel.innerHTML = '<option value="">All accounts</option>';
+  ACCOUNTS.map(a=>a.accountId).sort().forEach(id => {
+    const opt = document.createElement('option'); opt.value = id; opt.textContent = id;
+    acctSel.appendChild(opt);
+  });
+}
+
+function predictedYE(credit, quota, monthsElapsed){
+  if(!quota || quota === 0) return null;
+  const attainment = credit / quota;
+  return (attainment / monthsElapsed) * 12 * 100;
+}
+function fmtPct(v){ return (v === null || isNaN(v)) ? 'n/a' : v.toFixed(1) + '%'; }
+function fmtMoney(v){ return '$' + Number(v).toLocaleString(undefined, {maximumFractionDigits:0}); }
+
+function creditBucketMatch(a, bucket){
+  if(!bucket) return true;
+  const ratio = a.quota > 0 ? a.credit / a.quota : (a.credit>0 ? Infinity : 0);
+  if(bucket==='none') return a.credit === 0;
+  if(bucket==='under30') return ratio > 0 && ratio < 0.3;
+  if(bucket==='30to70') return ratio >= 0.3 && ratio <= 0.7;
+  if(bucket==='over70') return ratio > 0.7;
+  return true;
+}
+function quotaBucketMatch(a, bucket){
+  if(!bucket) return true;
+  const [lo, hi] = bucket.split('-');
+  const loN = parseFloat(lo);
+  if(bucket === '0-0') return a.quota === 0;
+  if(hi === ''){ return a.quota >= loN; }
+  const hiN = parseFloat(hi);
+  return a.quota > loN && a.quota <= hiN;
+}
+
+function currentFilters(){
+  return {
+    patch: document.getElementById('filterPatch').value,
+    account: document.getElementById('filterAccount').value,
+    quota: document.getElementById('filterQuota').value,
+    credit: document.getElementById('filterCredit').value,
+  };
+}
+
+function filteredAccounts(){
+  const f = currentFilters();
+  return ACCOUNTS.map((a,i)=>({...a, _idx:i})).filter(a => {
+    if(f.patch && a.patch !== f.patch) return false;
+    if(f.account && a.accountId !== f.account) return false;
+    if(!quotaBucketMatch(a, f.quota)) return false;
+    if(!creditBucketMatch(a, f.credit)) return false;
+    return true;
+  });
+}
+
+function renderAcctTable(){
+  const tbody = document.getElementById('acctTableBody');
+  tbody.innerHTML = '';
+  const rows = filteredAccounts();
+  const patches = Object.keys(PATCH_TOTALS).sort();
+
+  rows.forEach(a => {
+    const remaining = a.quota - a.credit;
+    const target = effectiveTarget(a, a._idx);
+    const isPending = target !== a.patch;
+    const tr = document.createElement('tr');
+    if(isPending) tr.classList.add('pending');
+
+    let options = '';
+    patches.forEach(p => {
+      options += `<option value="${p}" ${target===p?'selected':''}>${p}${p===a.patch?' (current)':''}</option>`;
+    });
+
+    tr.innerHTML = `<td>${a.accountId}</td><td>${a.patch}</td><td>${a.country||''}</td>
+      <td class="num">${fmtMoney(a.quota)}</td><td class="num">${fmtMoney(a.credit)}</td><td class="num">${fmtMoney(remaining)}</td>
+      <td class="tag">${a.newOwner ? a.newOwner : '—'}</td>
+      <td><select class="rowSelect" data-idx="${a._idx}">${options}</select></td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.querySelectorAll('.rowSelect').forEach(sel => {
+    sel.addEventListener('change', function(){
+      const idx = parseInt(this.dataset.idx);
+      const val = this.value;
+      const baseline = ACCOUNTS[idx].newOwner || ACCOUNTS[idx].patch;
+      if(val === baseline) OVERRIDE.delete(idx);
+      else OVERRIDE.set(idx, val);
+      renderAcctTable();
+      renderPatchTable();
+      updateSelectedSummary();
+    });
+  });
+}
+
+function updateSelectedSummary(){
+  const n = ACCOUNTS.filter((a, idx) => effectiveTarget(a, idx) !== a.patch).length;
+  document.getElementById('selectedSummary').textContent =
+    n === 0 ? '0 accounts pending transfer' : `${n} account${n>1?'s':''} pending transfer`;
+}
+
+['filterPatch','filterAccount','filterQuota','filterCredit'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', renderAcctTable);
+});
+document.getElementById('clearSelectionBtn').addEventListener('click', function(){
+  OVERRIDE.clear();
+  renderAcctTable(); renderPatchTable(); updateSelectedSummary();
+  document.getElementById('resultsCard').style.display = 'none';
+});
+
+function renderPatchTable(){
+  const tbody = document.getElementById('patchTableBody');
+  tbody.innerHTML = '';
+  const months = monthsElapsedNow();
+  const proposed = proposedPatchTotals();
+  Object.keys(PATCH_TOTALS).sort().forEach(p => {
+    const before = PATCH_TOTALS[p];
+    const after = proposed[p] || {quota:0, credit:0, count:0};
+    const yeBefore = predictedYE(before.credit, before.quota, months);
+    const yeAfter = predictedYE(after.credit, after.quota, months);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${p}</td>
+      <td class="num">${before.count} <span class="arrow-cell">→</span> ${after.count}</td>
+      <td class="num">${fmtMoney(before.quota)} <span class="arrow-cell">→</span> ${fmtMoney(after.quota)}</td>
+      <td class="num">${fmtMoney(before.credit)} <span class="arrow-cell">→</span> ${fmtMoney(after.credit)}</td>
+      <td class="num">${fmtPct(yeBefore)} <span class="arrow-cell">→</span> ${fmtPct(yeAfter)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function accountHealth(acc){
+  if(acc.credit === 0 && acc.quota !== 0) return {tag:'none', label:'No revenue', detail:'Zero credit recorded.'};
+  if(acc.quota !== 0 && (acc.credit / acc.quota) < 0.3) return {tag:'watch', label:'Watch', detail:'Credit well below quota so far.'};
+  return {tag:'healthy', label:'Healthy', detail:'Generating credit against quota.'};
+}
+
+function runSimulation(){
+  const months = monthsElapsedNow();
+  const moving = ACCOUNTS
+    .map((a, idx) => ({...a, _idx: idx, toPatch: effectiveTarget(a, idx)}))
+    .filter(a => a.toPatch !== a.patch);
+
+  if(moving.length === 0){
+    document.getElementById('resultsCard').style.display = 'none';
+    return;
+  }
+
+  const bySourcePatch = {};
+  const byTargetPatch = {};
+  moving.forEach(a => {
+    if(!bySourcePatch[a.patch]) bySourcePatch[a.patch] = { quota:0, credit:0, accounts:[] };
+    bySourcePatch[a.patch].quota += a.quota;
+    bySourcePatch[a.patch].credit += a.credit;
+    bySourcePatch[a.patch].accounts.push(a);
+
+    if(!byTargetPatch[a.toPatch]) byTargetPatch[a.toPatch] = { quota:0, credit:0, accounts:[] };
+    byTargetPatch[a.toPatch].quota += a.quota;
+    byTargetPatch[a.toPatch].credit += a.credit;
+    byTargetPatch[a.toPatch].accounts.push(a);
+  });
+
+  function buildBox(label, before, after, quotaAfter, creditAfter){
+    const deltaVal = (before!==null && after!==null) ? (after-before) : null;
+    const deltaClass = deltaVal>=0 ? 'up' : 'down';
+    const deltaText = deltaVal===null ? 'n/a' : (deltaVal>=0?'+':'')+deltaVal.toFixed(1)+' pts';
+    return { html: `<div class="rep-box">
+        <div class="rep-name">${label}</div>
+        <div class="pct-row"><span class="pct">${fmtPct(before)}</span><span class="arrow">→</span><span class="pct">${fmtPct(after)}</span></div>
+        <div class="delta ${deltaClass}">${deltaText}</div>
+        <div class="sub">Quota ${fmtMoney(quotaAfter)} · Credit ${fmtMoney(creditAfter)}</div>
+      </div>`, deltaVal };
+  }
+
+  let maxAbsDelta = 0;
+  let groupsHtml = '<div class="impact-grid">';
+
+  Object.keys(bySourcePatch).sort().forEach(p => {
+    const g = bySourcePatch[p];
+    const t = PATCH_TOTALS[p];
+    const before = predictedYE(t.credit, t.quota, months);
+    const afterQuota = t.quota - g.quota;
+    const afterCredit = t.credit - g.credit;
+    const after = predictedYE(afterCredit, afterQuota, months);
+    const box = buildBox(p + ' — losing ' + g.accounts.length + ' acct' + (g.accounts.length>1?'s':''), before, after, afterQuota, afterCredit);
+    if(box.deltaVal!==null) maxAbsDelta = Math.max(maxAbsDelta, Math.abs(box.deltaVal));
+    groupsHtml += box.html;
+  });
+
+  Object.keys(byTargetPatch).sort().forEach(p => {
+    const g = byTargetPatch[p];
+    const t = PATCH_TOTALS[p] || {quota:0, credit:0};
+    const before = predictedYE(t.credit, t.quota, months);
+    const afterQuota = t.quota + g.quota;
+    const afterCredit = t.credit + g.credit;
+    const after = predictedYE(afterCredit, afterQuota, months);
+    const box = buildBox(p + ' — receiving ' + g.accounts.length + ' acct' + (g.accounts.length>1?'s':''), before, after, afterQuota, afterCredit);
+    if(box.deltaVal!==null) maxAbsDelta = Math.max(maxAbsDelta, Math.abs(box.deltaVal));
+    groupsHtml += box.html;
+  });
+  groupsHtml += '</div>';
+
+  let indClass = 'green', indText = 'Low impact (<5 pts) — no immediate attainment risk';
+  if(maxAbsDelta >= 5 && maxAbsDelta <= 10){ indClass='amber'; indText='Moderate impact (5–10 pts) — review before approving'; }
+  else if(maxAbsDelta > 10){ indClass='red'; indText='High impact (>10 pts) — flag to manager before proceeding'; }
+  groupsHtml += `<div class="indicator ${indClass}"><span class="dot"></span><span>${indText}</span></div>`;
+
+  const healthCounts = {healthy:0, watch:0, none:0};
+  moving.forEach(a => { healthCounts[accountHealth(a).tag]++; });
+  groupsHtml += `<div style="margin-top:14px; font-size:12px; color:var(--ink-2);">Account health across the ${moving.length} moving account${moving.length>1?'s':''}:
+    <span class="health-tag healthy">${healthCounts.healthy} healthy</span>
+    <span class="health-tag watch">${healthCounts.watch} watch</span>
+    <span class="health-tag none">${healthCounts.none} no revenue</span></div>`;
+
+  document.getElementById('impactGroups').innerHTML = groupsHtml;
+  document.getElementById('resultsCard').style.display = 'block';
+
+  window._lastResults = { months, moving, bySourcePatch, byTargetPatch, maxAbsDelta };
+}
+
+document.getElementById('calcBtn').addEventListener('click', runSimulation);
+
+function findCol(headerRow, ...names){
+  for(const name of names){
+    const i = headerRow.findIndex(h => (h||'').toString().trim().toLowerCase() === name.toLowerCase());
+    if(i !== -1) return i;
+  }
+  return -1;
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  const errEl = document.getElementById('fileError');
+  errEl.style.display = 'none';
+  if(!file) return;
+  document.getElementById('fileLabelText').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try {
+      const data = new Uint8Array(evt.target.result);
+      const wb = XLSX.read(data, {type:'array', cellDates:true});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:null});
+
+      let headerRowIdx = -1;
+      for(let i=0;i<Math.min(rows.length,5);i++){
+        if(rows[i] && rows[i].includes('Patch')){ headerRowIdx = i; break; }
+      }
+      if(headerRowIdx === -1) throw new Error('Could not find a header row containing "Patch" in the first 5 rows.');
+
+      const headerRow = rows[headerRowIdx];
+      const colAccount = findCol(headerRow, 'Account (Text)', 'Account', 'Account Name');
+      const colPatch = findCol(headerRow, 'Patch', 'AE Name', 'AE');
+      const colCountry = findCol(headerRow, 'Planning Country', 'CBA Country', 'Country');
+      const colQuota = findCol(headerRow, 'Revenue Quota By Account');
+      const colCredit = findCol(headerRow, 'FY26 Revenue Credit', 'FY27 Revenue Credit', 'Revenue Credit');
+      const colNewOwner = findCol(headerRow, 'New Owner');
+
+      if(colAccount===-1 || colPatch===-1 || colQuota===-1 || colCredit===-1){
+        throw new Error('Missing an expected column (Account, Patch, Revenue Quota By Account, or Revenue Credit). Check the export format.');
+      }
+
+      const parsed = [];
+      for(let i=headerRowIdx+1;i<rows.length;i++){
+        const r = rows[i];
+        if(!r || !r[colAccount] || !r[colPatch]) continue;
+        parsed.push({
+          accountId: String(r[colAccount]),
+          patch: String(r[colPatch]),
+          country: colCountry!==-1 ? (r[colCountry]||'') : '',
+          quota: Number(r[colQuota]) || 0,
+          credit: Number(r[colCredit]) || 0,
+          newOwner: colNewOwner!==-1 ? String(r[colNewOwner]||'').trim() : ''
+        });
+      }
+      if(parsed.length === 0) throw new Error('No data rows found under the header.');
+      if(colNewOwner === -1){
+        errEl.textContent = 'Note: no "New Owner" column found — all rows loaded with no pre-assigned change. Add a "New Owner" column to pre-assign from Excel.';
+        errEl.style.display = 'block';
+        errEl.style.color = 'var(--amber)';
+      }
+
+      loadDataset(parsed);
+      document.getElementById('dataStatus').textContent = `Loaded ${parsed.length} accounts across ${Object.keys(PATCH_TOTALS).length} AEs from ${file.name}.`;
+    } catch(err){
+      errEl.style.color = 'var(--red)';
+      errEl.textContent = 'Could not read this file: ' + err.message;
+      errEl.style.display = 'block';
+    }
+  };
+  reader.onerror = function(){
+    errEl.textContent = 'Could not read this file. Try re-uploading it.';
+    errEl.style.display = 'block';
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+document.getElementById('useSampleBtn').addEventListener('click', function(){
+  document.getElementById('fileLabelText').textContent = 'Upload 2.05 export (.xlsx)';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileError').style.display = 'none';
+  loadDataset(JSON.parse(JSON.stringify(SAMPLE_DATA)));
+  document.getElementById('dataStatus').textContent = 'Using built-in sample data (24 accounts, 6 AEs, with pre-assigned New Owner changes on a few rows) — real export data with account/rep identifiers removed.';
+});
+
+function csvEscape(v){
+  const s = String(v === undefined || v === null ? '' : v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+}
+
+document.getElementById('exportBtn').addEventListener('click', async function(){
+  if(ACCOUNTS.length === 0) return;
+  // Full account-level export — same shape as the uploaded file, plus Manager Override
+  // and Effective New Owner, so the whole view (pre-assigned + any manual override) travels with it.
+  const header = ['Account ID','Current AE','CBA Country','Yearly Quota','Cumul. Credit','Pre-Assigned New Owner','Manager Override','Effective New Owner'];
+  const lines = [header.map(csvEscape).join(',')];
+  ACCOUNTS.forEach((a, idx) => {
+    const managerOverride = OVERRIDE.has(idx) ? OVERRIDE.get(idx) : '';
+    const effective = effectiveTarget(a, idx);
+    lines.push([
+      a.accountId, a.patch, a.country || '', a.quota.toFixed(2), a.credit.toFixed(2),
+      a.newOwner || '', managerOverride, effective
+    ].map(csvEscape).join(','));
+  });
+  const csv = lines.join('\n');
+
+  try {
+    const downloads = await (window.claude && window.claude.use ? window.claude.use('downloads') : Promise.resolve(null));
+    if(downloads){
+      await downloads.save({filename: `transfer_view_with_overrides.csv`, data: csv});
+      return;
+    }
+  } catch(e) { /* fall through */ }
+
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'transfer_view_with_overrides.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+loadDataset(JSON.parse(JSON.stringify(SAMPLE_DATA)));
+</script>
+</body>
+</html>
