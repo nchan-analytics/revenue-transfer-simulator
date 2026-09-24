@@ -1,0 +1,20 @@
+Revenue Transfer Impact Simulator
+A single-file tool (no install, runs in any browser) that lets a manager preview how a proposed account-ownership transfer changes both reps' Predicted Year-End Revenue Attainment, before the change is made in Anaplan.
+What it needs
+An Excel export with these columns present somewhere in the file (column order and exact position don't matter — the tool detects them by header name):
+Account
+Patch (current owner)
+Planning Country
+Revenue Quota By Account
+Revenue Credit
+A New Owner column is optional — include it to pre-assign proposed transfers before upload.
+What it does
+Auto-detects the header row and matches columns by name, not fixed position
+Shows a Team Overview (before → after) for every rep affected
+Lets you fine-tune any assignment manually via Manager Override, on top of what was pre-assigned in Excel
+Calculates Predicted Year-End Revenue Attainment for each rep, before and after
+Exports a full CSV of every account with its current owner, pre-assigned owner, manager override, and final effective owner — so nothing is lost between what was uploaded and what was decided in the tool
+What it does NOT do
+Simulation only. Nothing is written back to Anaplan — Sales Ops still keys the approved transfer in manually, by design, so there's a human checkpoint before any system-of-record change.
+Data note
+The sample data in this repo is fully synthetic — no real account names, rep names, or company data. Use `anonymize_excel.py` in this repo to de-identify your own export before uploading it here.
