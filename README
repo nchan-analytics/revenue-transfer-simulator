@@ -18,3 +18,4 @@ What it does NOT do
 Simulation only. Nothing is written back to Anaplan — Sales Ops still keys the approved transfer in manually, by design, so there's a human checkpoint before any system-of-record change.
 Data note
 The sample data in this repo is fully synthetic — no real account names, rep names, or company data. Use `anonymize_excel.py` in this repo to de-identify your own export before uploading it here.
+ Built as part of my AI adoption challenge, Sept 2026.
